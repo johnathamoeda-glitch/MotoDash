@@ -26,7 +26,6 @@
         }
     </style>
     <script>
-      // Shim global robusto para variáveis de ambiente
       window.process = window.process || {};
       window.process.env = window.process.env || {
         API_KEY: "",
@@ -65,7 +64,8 @@
 </head>
 <body class="bg-[#F8F8F8] text-black">
     <div id="error-display">
-      <h1 style="color: white; font-size: 24px; margin-bottom: 20px; font-weight: 900; text-transform: uppercase;">Ops! Algo deu errado na renderização.</h1>
+      <h1 style="color: white; font-size: 24px; margin-bottom: 20px; font-weight: 900; text-transform: uppercase;">Ops! Ocorreu um erro de renderização.</h1>
+      <p style="color: #666; font-size: 14px;">Isso geralmente acontece quando versões conflitantes do React são carregadas. O sistema tentará se recuperar automaticamente.</p>
     </div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
