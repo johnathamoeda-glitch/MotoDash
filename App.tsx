@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, Goal } from './types';
-import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
-import Dashboard from './components/Dashboard';
-import FuelCalculator from './components/FuelCalculator';
-import GoalManager from './components/GoalManager';
+import { Transaction, Goal } from './types.ts';
+import TransactionForm from './components/TransactionForm.tsx';
+import TransactionList from './components/TransactionList.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import FuelCalculator from './components/FuelCalculator.tsx';
+import GoalManager from './components/GoalManager.tsx';
 
 type TabType = 'dashboard' | 'history' | 'calculator' | 'goals';
 
@@ -22,20 +22,29 @@ const App: React.FC = () => {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
 
+  // Carregamento inicial seguro
   useEffect(() => {
-    const savedTrans = localStorage.getItem('motodash_transactions');
-    if (savedTrans) setTransactions(JSON.parse(savedTrans));
-    
-    const savedGoals = localStorage.getItem('motodash_goals');
-    if (savedGoals) setGoals(JSON.parse(savedGoals));
+    try {
+      const savedTrans = localStorage.getItem('motodash_transactions');
+      if (savedTrans) setTransactions(JSON.parse(savedTrans));
+      
+      const savedGoals = localStorage.getItem('motodash_goals');
+      if (savedGoals) setGoals(JSON.parse(savedGoals));
+    } catch (e) {
+      console.error("Erro ao carregar dados do LocalStorage", e);
+    }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('motodash_transactions', JSON.stringify(transactions));
+    if (transactions.length > 0 || localStorage.getItem('motodash_transactions')) {
+      localStorage.setItem('motodash_transactions', JSON.stringify(transactions));
+    }
   }, [transactions]);
 
   useEffect(() => {
-    localStorage.setItem('motodash_goals', JSON.stringify(goals));
+    if (goals.length > 0 || localStorage.getItem('motodash_goals')) {
+      localStorage.setItem('motodash_goals', JSON.stringify(goals));
+    }
   }, [goals]);
 
   const addTransaction = (t: Transaction) => {
@@ -70,8 +79,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-32 bg-[#F8F8F8] text-black">
-      {/* Header Estilo Uber/99 */}
+    <div className="min-h-screen pb-32 bg-[#F8F8F8] text-black font-sans">
       <header className="sticky top-0 z-40 bg-black text-white shadow-xl">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -86,7 +94,6 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        {/* Tab Switcher com Amarelo 99 */}
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex gap-6 overflow-x-auto no-scrollbar whitespace-nowrap border-t border-gray-800">
             {[
@@ -108,7 +115,6 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Date Filter Bar */}
       <div className="bg-white border-b border-gray-200 py-4 mb-6 shadow-sm">
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-center justify-between mb-3">
@@ -155,12 +161,11 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Nav Estilo Uber */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black px-4 py-3 rounded-3xl shadow-2xl flex items-center gap-6 z-50 border border-gray-800">
         {[
           { id: 'dashboard', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg> },
           { id: 'goals', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
-          { id: 'plus', icon: <div className="bg-[#FDE047] text-black p-2 rounded-xl scale-125"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg></div>, isSpecial: true },
+          { id: 'plus', icon: <div className="bg-[#FDE047] text-black p-2 rounded-xl scale-125"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg></div> },
           { id: 'history', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg> },
           { id: 'calculator', icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> }
         ].map(item => (

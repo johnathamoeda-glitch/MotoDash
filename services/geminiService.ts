@@ -1,11 +1,19 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-import { Transaction } from "../types";
+import { GoogleGenAI } from "@google/genai";
+import { Transaction } from "../types.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Função segura para inicializar a IA apenas quando necessário e se a chave existir
+const getAIClient = () => {
+  const apiKey = process?.env?.API_KEY;
+  if (!apiKey) return null;
+  return new GoogleGenAI({ apiKey });
+};
 
 export async function getFinancialInsights(transactions: Transaction[]) {
   if (transactions.length === 0) return "Adicione algumas corridas e gastos para eu analisar seu desempenho!";
+
+  const ai = getAIClient();
+  if (!ai) return "Chave de API não configurada. Configure o ambiente para usar IA.";
 
   const dataSummary = transactions.map(t => {
     if (t.type === 'earning') {

@@ -10,9 +10,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
         .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        /* Esconder scrollbar mas manter funcionalidade */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+    <script>
+      // Shim para evitar erro de "process is not defined" no Vercel/Produção
+      window.process = { env: { API_KEY: "" } };
+    </script>
 <script type="importmap">
 {
   "imports": {
@@ -25,7 +32,8 @@
 }
 </script>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-[#F8F8F8] text-black">
     <div id="root"></div>
+    <!-- O sistema importa automaticamente o index.tsx, mas garantimos que o container existe -->
 </body>
 </html>
