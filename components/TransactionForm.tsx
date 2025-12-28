@@ -6,6 +6,8 @@ interface Props {
   onAdd: (transaction: Transaction) => void;
 }
 
+const generateId = () => Math.random().toString(36).substring(2, 15);
+
 const TransactionForm: React.FC<Props> = ({ onAdd }) => {
   const [tab, setTab] = useState<'earning' | 'expense'>('earning');
   const [amount, setAmount] = useState('');
@@ -25,7 +27,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd }) => {
       const m = parseInt(minutesPart || '0');
       const totalHours = h + (m / 60);
       onAdd({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'earning',
         date,
         app,
@@ -36,7 +38,7 @@ const TransactionForm: React.FC<Props> = ({ onAdd }) => {
       setAmount(''); setKm(''); setHoursPart(''); setMinutesPart('');
     } else {
       onAdd({
-        id: crypto.randomUUID(),
+        id: generateId(),
         type: 'expense',
         date,
         category,

@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, Goal } from './types.ts';
-import TransactionForm from './components/TransactionForm.tsx';
-import TransactionList from './components/TransactionList.tsx';
-import Dashboard from './components/Dashboard.tsx';
-import FuelCalculator from './components/FuelCalculator.tsx';
-import GoalManager from './components/GoalManager.tsx';
+import { Transaction, Goal } from './types';
+import TransactionForm from './components/TransactionForm';
+import TransactionList from './components/TransactionList';
+import Dashboard from './components/Dashboard';
+import FuelCalculator from './components/FuelCalculator';
+import GoalManager from './components/GoalManager';
 
 type TabType = 'dashboard' | 'history' | 'calculator' | 'goals';
 
@@ -22,7 +22,6 @@ const App: React.FC = () => {
   const [startDate, setStartDate] = useState(firstDay);
   const [endDate, setEndDate] = useState(lastDay);
 
-  // Carregamento inicial seguro
   useEffect(() => {
     try {
       const savedTrans = localStorage.getItem('motodash_transactions');
@@ -31,18 +30,18 @@ const App: React.FC = () => {
       const savedGoals = localStorage.getItem('motodash_goals');
       if (savedGoals) setGoals(JSON.parse(savedGoals));
     } catch (e) {
-      console.error("Erro ao carregar dados do LocalStorage", e);
+      console.warn("LocalStorage vazio ou corrompido.");
     }
   }, []);
 
   useEffect(() => {
-    if (transactions.length > 0 || localStorage.getItem('motodash_transactions')) {
+    if (transactions.length > 0) {
       localStorage.setItem('motodash_transactions', JSON.stringify(transactions));
     }
   }, [transactions]);
 
   useEffect(() => {
-    if (goals.length > 0 || localStorage.getItem('motodash_goals')) {
+    if (goals.length > 0) {
       localStorage.setItem('motodash_goals', JSON.stringify(goals));
     }
   }, [goals]);
@@ -53,7 +52,9 @@ const App: React.FC = () => {
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
+    if(confirm("Excluir este registro?")) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+    }
   };
 
   const addGoal = (g: Goal) => {
@@ -72,11 +73,6 @@ const App: React.FC = () => {
       return t.date >= startDate && t.date <= endDate;
     });
   }, [transactions, startDate, endDate]);
-
-  const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-  };
 
   return (
     <div className="min-h-screen pb-32 bg-[#F8F8F8] text-black font-sans">
@@ -123,7 +119,7 @@ const App: React.FC = () => {
               Filtrar Período
             </label>
             {(startDate || endDate) && (
-              <button onClick={clearFilters} className="text-[10px] font-black text-black bg-[#FDE047] px-2 py-0.5 rounded uppercase">Ver Tudo</button>
+              <button onClick={() => {setStartDate(''); setEndDate('');}} className="text-[10px] font-black text-black bg-[#FDE047] px-2 py-0.5 rounded uppercase">Ver Tudo</button>
             )}
           </div>
           <div className="flex items-center gap-3">
