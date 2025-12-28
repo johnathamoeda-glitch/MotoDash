@@ -1,9 +1,8 @@
 
 import React, { useMemo } from 'react';
-import { Transaction, DashboardStats } from '../types';
+import { Transaction, DashboardStats } from '../types.ts';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Cell, PieChart, Pie, Legend 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 
 interface Props {
@@ -50,8 +49,6 @@ const Dashboard: React.FC<Props> = ({ transactions }) => {
     });
     return Object.values(groups);
   }, [transactions]);
-
-  const COLORS = ['#FDE047', '#000000', '#4B5563'];
 
   return (
     <div className="space-y-6">

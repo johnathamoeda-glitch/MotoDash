@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Goal, Transaction } from '../types';
+import { Goal, Transaction } from '../types.ts';
 
 interface Props {
   goals: Goal[];
@@ -23,23 +23,20 @@ const GoalManager: React.FC<Props> = ({ goals, onAddGoal, onDeleteGoal, transact
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação básica
     const targetValue = parseFloat(target.replace(',', '.'));
     if (!name.trim() || isNaN(targetValue) || targetValue <= 0) {
-      alert("Por favor, preencha o nome e um valor válido maior que zero.");
+      alert("Por favor, preencha o nome e um valor válido.");
       return;
     }
 
     const newGoal: Goal = {
-      id: Math.random().toString(36).substring(2, 11), // Gerador de ID mais compatível
+      id: Math.random().toString(36).substring(2, 11),
       name: name.trim(),
       targetAmount: targetValue,
       createdAt: new Date().toISOString()
     };
 
     onAddGoal(newGoal);
-    
-    // Limpar campos e fechar formulário
     setName('');
     setTarget('');
     setIsAdding(false);
@@ -104,11 +101,7 @@ const GoalManager: React.FC<Props> = ({ goals, onAddGoal, onDeleteGoal, transact
 
       {goals.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-200">
-          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          </div>
-          <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Nenhuma meta cadastrada ainda</p>
-          <button onClick={() => setIsAdding(true)} className="mt-4 text-black font-black text-sm underline decoration-[#FDE047] decoration-4 underline-offset-4">Clique para criar a primeira</button>
+          <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Nenhuma meta cadastrada</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -120,9 +113,9 @@ const GoalManager: React.FC<Props> = ({ goals, onAddGoal, onDeleteGoal, transact
                 <button 
                   type="button"
                   onClick={() => {
-                    if(confirm("Deseja realmente excluir esta meta?")) onDeleteGoal(goal.id);
+                    if(confirm("Deseja excluir esta meta?")) onDeleteGoal(goal.id);
                   }} 
-                  className="absolute top-4 right-4 text-gray-200 hover:text-black opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-4 right-4 text-gray-200 hover:text-black transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
@@ -133,22 +126,11 @@ const GoalManager: React.FC<Props> = ({ goals, onAddGoal, onDeleteGoal, transact
                   </div>
                   <span className="text-2xl font-black text-black">{percentage.toFixed(0)}%</span>
                 </div>
-                <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-50">
+                <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all duration-1000 ${isCompleted ? 'bg-[#FDE047]' : 'bg-black'}`} 
                     style={{ width: `${percentage}%` }}
                   ></div>
-                </div>
-                <div className="mt-4 flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
-                  <span className="text-gray-400">Progresso Atual</span>
-                  {isCompleted ? (
-                    <span className="bg-[#FDE047] px-2 py-0.5 rounded flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      Meta Atingida!
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">Falta: R$ {Math.max(goal.targetAmount - currentNetProfit, 0).toFixed(2)}</span>
-                  )}
                 </div>
               </div>
             );

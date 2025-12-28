@@ -11,21 +11,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        #error-display { display: none; position: fixed; inset: 0; background: #fff; color: red; padding: 20px; z-index: 9999; font-family: monospace; overflow: auto; }
+        #error-display { display: none; position: fixed; inset: 0; background: #fff; color: red; padding: 20px; z-index: 9999; font-family: monospace; overflow: auto; border: 5px solid red; }
     </style>
     <script>
-      // Shim global e imediato
+      // Shim global imediato para evitar erro de process no navegador
       window.process = { env: { API_KEY: "" } };
       
-      // Capturador de erros para evitar tela branca sem diagnóstico
+      // Capturador de erros para debug em tempo real
       window.onerror = function(msg, url, lineNo, columnNo, error) {
         var display = document.getElementById('error-display');
         if (display) {
           display.style.display = 'block';
-          display.innerHTML += '<div><strong>Erro:</strong> ' + msg + '<br><small>' + url + ' L:' + lineNo + '</small></div><hr>';
+          display.innerHTML += '<div><strong>Erro:</strong> ' + msg + '<br><small>' + url + ' linha: ' + lineNo + '</small></div><hr>';
         }
         return false;
       };
@@ -33,13 +32,13 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "recharts": "https://esm.sh/recharts@2.12.7",
-    "@google/genai": "https://esm.sh/@google/genai@0.21.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom",
+    "@google/genai": "https://esm.sh/@google/genai@0.21.0"
   }
 }
 </script>

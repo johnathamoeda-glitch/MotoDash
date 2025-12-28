@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -16,10 +16,10 @@ try {
     </React.StrictMode>
   );
 } catch (error) {
-  console.error("Erro ao renderizar App:", error);
+  console.error("Erro fatal ao renderizar App:", error);
   const display = document.getElementById('error-display');
   if (display) {
     display.style.display = 'block';
-    display.innerHTML = "<h1>Erro de Inicialização</h1><pre>" + String(error) + "</pre>";
+    display.innerHTML = "<h1>Erro de Inicialização React</h1><pre>" + String(error) + "</pre>";
   }
 }

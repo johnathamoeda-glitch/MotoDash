@@ -2,7 +2,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { Transaction } from "../types.ts";
 
-// Função segura para inicializar a IA apenas quando necessário e se a chave existir
 const getAIClient = () => {
   const apiKey = process?.env?.API_KEY;
   if (!apiKey) return null;
@@ -13,7 +12,7 @@ export async function getFinancialInsights(transactions: Transaction[]) {
   if (transactions.length === 0) return "Adicione algumas corridas e gastos para eu analisar seu desempenho!";
 
   const ai = getAIClient();
-  if (!ai) return "Chave de API não configurada. Configure o ambiente para usar IA.";
+  if (!ai) return "Chave de IA não configurada.";
 
   const dataSummary = transactions.map(t => {
     if (t.type === 'earning') {
@@ -23,29 +22,16 @@ export async function getFinancialInsights(transactions: Transaction[]) {
     }
   }).join('\n');
 
-  const prompt = `
-    Analise os seguintes dados financeiros de um motorista de aplicativo (moto) no Brasil:
-    ${dataSummary}
-
-    Por favor, forneça:
-    1. Uma breve análise do lucro líquido.
-    2. Dicas práticas para reduzir custos ou aumentar ganhos com base nos dados.
-    3. Identifique qual plataforma parece mais rentável se houver dados suficientes.
-    4. Mantenha um tom encorajador e profissional. Use Markdown.
-  `;
+  const prompt = `Analise os dados financeiros do motorista de moto:\n${dataSummary}\nForneça lucro líquido, dicas de economia e qual plataforma rende mais.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: {
-        temperature: 0.7,
-        topP: 0.9,
-      }
     });
-    return response.text || "Não foi possível gerar uma análise no momento.";
+    return response.text || "Sem análise disponível.";
   } catch (error) {
-    console.error("Error calling Gemini:", error);
-    return "Ocorreu um erro ao consultar o assistente de IA. Tente novamente mais tarde.";
+    console.error("Gemini Error:", error);
+    return "Erro ao consultar IA.";
   }
 }

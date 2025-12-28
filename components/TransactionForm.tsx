@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AppType, ExpenseCategory, Transaction } from '../types';
+import { AppType, ExpenseCategory, Transaction } from '../types.ts';
 
 interface Props {
   onAdd: (transaction: Transaction) => void;

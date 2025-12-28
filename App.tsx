@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, Goal } from './types';
-import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
-import Dashboard from './components/Dashboard';
-import FuelCalculator from './components/FuelCalculator';
-import GoalManager from './components/GoalManager';
+import { Transaction, Goal } from './types.ts';
+import TransactionForm from './components/TransactionForm.tsx';
+import TransactionList from './components/TransactionList.tsx';
+import Dashboard from './components/Dashboard.tsx';
+import FuelCalculator from './components/FuelCalculator.tsx';
+import GoalManager from './components/GoalManager.tsx';
 
 type TabType = 'dashboard' | 'history' | 'calculator' | 'goals';
 
@@ -30,7 +30,7 @@ const App: React.FC = () => {
       const savedGoals = localStorage.getItem('motodash_goals');
       if (savedGoals) setGoals(JSON.parse(savedGoals));
     } catch (e) {
-      console.warn("LocalStorage vazio ou corrompido.");
+      console.warn("LocalStorage vazio ou com erro.");
     }
   }, []);
 
@@ -52,7 +52,7 @@ const App: React.FC = () => {
   };
 
   const deleteTransaction = (id: string) => {
-    if(confirm("Excluir este registro?")) {
+    if(confirm("Deseja excluir este registro permanentemente?")) {
       setTransactions(prev => prev.filter(t => t.id !== id));
     }
   };
