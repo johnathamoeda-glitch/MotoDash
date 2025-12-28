@@ -6,10 +6,13 @@ import TransactionList from './components/TransactionList.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import FuelCalculator from './components/FuelCalculator.tsx';
 import GoalManager from './components/GoalManager.tsx';
+import Login from './components/Login.tsx';
 
 type TabType = 'dashboard' | 'history' | 'calculator' | 'goals';
 
 const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -23,6 +26,13 @@ const App: React.FC = () => {
   const [endDate, setEndDate] = useState(lastDay);
 
   useEffect(() => {
+    // Verificar autenticação
+    const authStatus = sessionStorage.getItem('motodash_auth');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+    setIsLoadingAuth(false);
+
     try {
       const savedTrans = localStorage.getItem('motodash_transactions');
       if (savedTrans) setTransactions(JSON.parse(savedTrans));
@@ -45,6 +55,18 @@ const App: React.FC = () => {
       localStorage.setItem('motodash_goals', JSON.stringify(goals));
     }
   }, [goals]);
+
+  const handleLoginSuccess = () => {
+    sessionStorage.setItem('motodash_auth', 'true');
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    if (confirm("Deseja realmente sair?")) {
+      sessionStorage.removeItem('motodash_auth');
+      setIsAuthenticated(false);
+    }
+  };
 
   const addTransaction = (t: Transaction) => {
     setTransactions(prev => [...prev, t]);
@@ -74,6 +96,14 @@ const App: React.FC = () => {
     });
   }, [transactions, startDate, endDate]);
 
+  if (isLoadingAuth) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-[#FDE047] font-black uppercase text-xs tracking-widest">Carregando...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Login onLogin={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen pb-32 bg-[#F8F8F8] text-black font-sans">
       <header className="sticky top-0 z-40 bg-black text-white shadow-xl">
@@ -82,12 +112,21 @@ const App: React.FC = () => {
             <div className="w-10 h-10 bg-[#FDE047] rounded-xl flex items-center justify-center text-black font-black italic shadow-lg transform -rotate-3">M</div>
             <h1 className="font-black text-white tracking-tighter text-xl uppercase">MotoDash</h1>
           </div>
-          <button 
-            onClick={() => setShowForm(!showForm)}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all font-bold text-sm shadow-md active:scale-95 ${showForm ? 'bg-gray-800 text-white' : 'bg-[#FDE047] text-black'}`}
-          >
-            {showForm ? 'Fechar' : 'Lançar +'}
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-gray-500 hover:text-white transition-colors"
+              title="Sair"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            </button>
+            <button 
+              onClick={() => setShowForm(!showForm)}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all font-bold text-sm shadow-md active:scale-95 ${showForm ? 'bg-gray-800 text-white' : 'bg-[#FDE047] text-black'}`}
+            >
+              {showForm ? 'Fechar' : 'Lançar +'}
+            </button>
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto px-6">
