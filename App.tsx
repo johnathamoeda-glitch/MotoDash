@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Transaction, Goal } from './types.ts';
 import TransactionForm from './components/TransactionForm.tsx';
 import TransactionList from './components/TransactionList.tsx';
@@ -16,6 +16,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -36,33 +37,26 @@ const App: React.FC = () => {
     setIsLoadingAuth(false);
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (isSupabaseConfigured()) {
-        fetchDataFromSupabase();
-      } else {
-        loadLocalData();
-      }
-    }
-  }, [isAuthenticated]);
-
-  const loadLocalData = () => {
+  const loadLocalData = useCallback(() => {
     const localTrans = localStorage.getItem('motodash_transactions');
     const localGoals = localStorage.getItem('motodash_goals');
     if (localTrans) setTransactions(JSON.parse(localTrans));
     if (localGoals) setGoals(JSON.parse(localGoals));
-  };
+  }, []);
 
   const saveLocalData = (newTrans?: Transaction[], newGoals?: Goal[]) => {
     if (newTrans) localStorage.setItem('motodash_transactions', JSON.stringify(newTrans));
     if (newGoals) localStorage.setItem('motodash_goals', JSON.stringify(newGoals));
   };
 
-  const fetchDataFromSupabase = async () => {
+  const fetchDataFromSupabase = useCallback(async (silent = false) => {
     const client = supabase;
     if (!client) return;
-    setIsSyncing(true);
+    
+    if (!silent) setIsSyncing(true);
+    
     try {
+      // Busca transações
       const { data: transData, error: transError } = await client
         .from('transactions')
         .select('*')
@@ -87,6 +81,7 @@ const App: React.FC = () => {
 
       setTransactions(mappedTrans);
 
+      // Busca metas
       const { data: goalsData, error: goalsError } = await client
         .from('goals')
         .select('*');
@@ -101,13 +96,37 @@ const App: React.FC = () => {
       }));
 
       setGoals(mappedGoals);
+      setLastSyncTime(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      
+      // Atualiza cache local
+      saveLocalData(mappedTrans, mappedGoals);
     } catch (err) {
-      console.error("Erro Supabase:", err);
-      loadLocalData();
+      console.error("Erro na sincronização Supabase:", err);
+      if (!silent) loadLocalData();
     } finally {
-      setIsSyncing(false);
+      if (!silent) setIsSyncing(false);
     }
-  };
+  }, [loadLocalData]);
+
+  // Efeito principal de Sincronização e Polling
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isSupabaseConfigured()) {
+        // Carga inicial
+        fetchDataFromSupabase();
+
+        // Configura intervalo de 40 segundos para sincronização entre aparelhos
+        const syncInterval = setInterval(() => {
+          console.log("MotoDash: Sincronizando dados com a nuvem...");
+          fetchDataFromSupabase(true); // silent = true para não mostrar loading toda hora
+        }, 40000);
+
+        return () => clearInterval(syncInterval);
+      } else {
+        loadLocalData();
+      }
+    }
+  }, [isAuthenticated, fetchDataFromSupabase, loadLocalData]);
 
   const handleConfigUpdate = () => {
     updateSupabaseClient();
@@ -147,36 +166,13 @@ const App: React.FC = () => {
           })
         };
 
-        const { data, error } = await client
-          .from('transactions')
-          .insert([payload])
-          .select();
-
+        const { error } = await client.from('transactions').insert([payload]);
         if (error) throw error;
         
-        const newT = data[0];
-        const mappedNew: Transaction = {
-          id: newT.id,
-          type: newT.type,
-          date: newT.date,
-          amount: Number(newT.amount),
-          ...(newT.type === 'earning' ? {
-            app: newT.app,
-            kmTraveled: Number(newT.km_traveled || 0),
-            hoursWorked: Number(newT.hours_worked || 0)
-          } : {
-            category: newT.category,
-            description: newT.description
-          })
-        } as Transaction;
-
-        const updated = [mappedNew, ...transactions];
-        setTransactions(updated);
-        saveLocalData(updated);
+        await fetchDataFromSupabase(true);
         setShowForm(false);
       } catch (err) {
-        alert("Erro ao salvar na nuvem.");
-        console.error(err);
+        alert("Erro ao salvar na nuvem. Verifique sua conexão.");
       } finally {
         setIsSyncing(false);
       }
@@ -196,7 +192,7 @@ const App: React.FC = () => {
         try {
           const { error } = await client.from('transactions').delete().eq('id', id);
           if (error) throw error;
-          setTransactions(prev => prev.filter(t => t.id !== id));
+          await fetchDataFromSupabase(true);
         } catch (err) {
           alert("Erro ao excluir na nuvem.");
         } finally {
@@ -215,23 +211,9 @@ const App: React.FC = () => {
     if (isSupabaseConfigured() && client) {
       setIsSyncing(true);
       try {
-        const { data, error } = await client
-          .from('goals')
-          .insert([{ name: g.name, target_amount: g.targetAmount }])
-          .select();
-        
+        const { error } = await client.from('goals').insert([{ name: g.name, target_amount: g.targetAmount }]);
         if (error) throw error;
-        
-        const newG = data[0];
-        const mappedGoal = {
-          id: newG.id,
-          name: newG.name,
-          targetAmount: Number(newG.target_amount),
-          createdAt: newG.created_at
-        };
-        const updated = [...goals, mappedGoal];
-        setGoals(updated);
-        saveLocalData(undefined, updated);
+        await fetchDataFromSupabase(true);
       } catch (err) {
         alert("Erro ao salvar meta na nuvem.");
       } finally {
@@ -252,7 +234,7 @@ const App: React.FC = () => {
         try {
           const { error } = await client.from('goals').delete().eq('id', id);
           if (error) throw error;
-          setGoals(prev => prev.filter(g => g.id !== id));
+          await fetchDataFromSupabase(true);
         } catch (err) {
           alert("Erro ao excluir meta.");
         } finally {
@@ -279,7 +261,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center">
         <div className="w-12 h-12 border-4 border-[#FDE047] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-[#FDE047] font-black uppercase text-xs tracking-widest">Carregando MotoDash...</div>
+        <div className="text-[#FDE047] font-black uppercase text-xs tracking-widest">Iniciando MotoDash...</div>
       </div>
     );
   }
@@ -296,15 +278,22 @@ const App: React.FC = () => {
             <div className="w-10 h-10 bg-[#FDE047] rounded-xl flex items-center justify-center text-black font-black italic shadow-lg transform -rotate-3">M</div>
             <div className="flex flex-col">
               <h1 className="font-black text-white tracking-tighter text-xl uppercase leading-none">MotoDash</h1>
-              <span className={`text-[8px] font-black uppercase tracking-widest mt-1 flex items-center gap-1 ${isSupabaseConfigured() ? 'text-[#FDE047]' : 'text-red-500'}`}>
-                {isSyncing ? (
-                  <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-[#FDE047] rounded-full animate-ping"></span> Sincronizando...
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-[8px] font-black uppercase tracking-widest flex items-center gap-1 ${isSupabaseConfigured() ? 'text-[#FDE047]' : 'text-red-500'}`}>
+                  {isSyncing ? (
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-[#FDE047] rounded-full animate-ping"></span> Sincronizando...
+                    </span>
+                  ) : (
+                    isSupabaseConfigured() ? "Nuvem Ativa" : "Offline"
+                  )}
+                </span>
+                {lastSyncTime && (
+                  <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">
+                    • Atualizado: {lastSyncTime}
                   </span>
-                ) : (
-                  isSupabaseConfigured() ? "Nuvem Ativa" : "Offline (Sem Nuvem)"
                 )}
-              </span>
+              </div>
             </div>
           </div>
           <button onClick={handleLogout} className="p-2 text-gray-500 hover:text-white transition-colors bg-gray-900 rounded-lg">
@@ -345,6 +334,11 @@ const App: React.FC = () => {
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Fim:</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-gray-50 border-2 border-gray-100 rounded-xl px-3 py-1.5 text-xs font-bold focus:border-black outline-none" />
             </div>
+            <div className="ml-auto min-w-max">
+              <button onClick={() => fetchDataFromSupabase()} className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                <svg className={`w-4 h-4 text-gray-500 ${isSyncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -376,7 +370,7 @@ const App: React.FC = () => {
           { id: 'goals', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
           { id: 'plus', icon: <div className="bg-[#FDE047] text-black p-2 rounded-xl scale-110 shadow-lg"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 4v16m8-8H4" /></svg></div> },
           { id: 'history', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg> },
-          { id: 'settings', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724/0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> }
+          { id: 'settings', icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg> }
         ].map(item => (
           <button 
             key={item.id}
